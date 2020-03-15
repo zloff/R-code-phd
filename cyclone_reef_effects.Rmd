@@ -1,0 +1,65 @@
+---
+title: "Cyclone reef effects"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(vegan)
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(cowplot)
+setwd("~/Projects/R_analysis_phd")
+source("summarySE.R")
+```
+
+
+
+```{r}
+benthic.data <- read.csv("~/Projects/R_analysis_phd/sargassaceae_all benthic categories for graphs summed coral.csv", strip.white=T)
+
+# Rename site labels
+benthic.data$Site <- factor(benthic.data$Site, levels=c("Turtle North - Back", "Turtle North - Coral", "Turtle North - Front", "Turtle South - Channel", "Turtle South - Coral", "Turtle South - Front"), labels=c("North - Back", "North - Coral", "North - Front", "South - Channel", "South - Back", "South - Front"))
+
+benthic.data <- benthic.data %>% gather(key=Organism, value=Abundance, Acropora:Zoantharian...Green)
+
+str(benthic.data)
+
+benthic.summary <- summarySE(benthic.data, measurevar = "Abundance", groupvars = c("Year", "Site", "Organism"));head(benthic.summary)
+
+str(benthic.summary)
+
+(coral <- benthic.summary
+    %>% filter(Site %in% c("South - Back", "North - Back"), Organism == "Coral")
+    %>% ggplot(aes(x = Year, y = Abundance, col = Site))
+    + ggtitle("Coral")
+    + geom_point()
+    + geom_line()
+    + geom_linerange(aes(ymin = Abundance - se, ymax = Abundance + se))
+    + ylab("Abundance (% cover)")
+    + ylim(0,80)
+    + scale_color_manual(values = c("#990099", "#FF0033"))
+    + theme_classic() 
+    + theme(axis.title.x = element_blank(), axis.text.x = element_blank(), text = element_text(size = 14), plot.margin = unit(c(0, 0, 0, 0), "cm"), plot.title = element_text(size = 16, hjust = 0.5)))
+
+(sargassum <- benthic.summary 
+    %>% filter(Site %in% c("South - Front", "North - Front"), Organism=="Sargassaceae")   
+    %>% ggplot(aes(x = Year, y = Abundance, col = Site))
+    + ggtitle("Seaweed")
+    + geom_point()
+    + geom_line()
+    + geom_linerange(aes(ymin = Abundance - se, ymax = Abundance + se))
+    + ylab("Abundance (% cover)")
+    + ylim(0,80)
+    + scale_color_manual(values = c("#003300","#339900"))
+    + theme_classic()
+    + theme(text = element_text(size = 14), plot.margin = unit(c(0, 0, 0, 0), "cm"), plot.title = element_text(size = 16, hjust = 0.5)))
+
+(coral.vs.sargassum <-  plot_grid(coral, sargassum, ncol = 1,labels = c("a","b"), label_fontface = "bold", align = "hv"))
+
+#ggsave(file = 'coral.vs.sargassum.eps', coral.vs.sargassum, width=10,height=15,dpi=200, units='cm')
+```
+
